@@ -6,9 +6,8 @@
 #include <cstring>
 #include <sys/mman.h>
 
-#define LIMIT 1e8
 #define KILOBYTE 1024
-#define FAILURE ((void*)(-1))
+
 
 
 /**

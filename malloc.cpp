@@ -1,14 +1,13 @@
 
+#include "malloc.hpp"
+
 #include <iostream>
 #include <unistd.h>
 #include <cstring>
 #include <sys/mman.h>
 
-#include "malloc.hpp"
-
-#define is ==
-#define isnot !=
-#define returned ==
+#define FAILURE ((void*)(-1))
+#define LIMIT 1e8
 
 int BuddyAllocator::findOrder(size_t size) // basically log function
 {
@@ -36,11 +35,11 @@ BuddyAllocator::BuddyAllocator() :
 
     size_t address = ( (intptr_t) sbrk(0) ) % ALIGNMENT;
     address = ALIGNMENT - address;
-    if(sbrk(address) returned FAILURE) // align the heap
+    if(sbrk(address) == FAILURE) // align the heap
         throw BuddyAllocatorException();
 
     void* heapAddress = sbrk(INITIAL_BLOCKS_NUM*INITIAL_BLOCK_SIZE);
-    if(heapAddress returned FAILURE)
+    if(heapAddress == FAILURE)
         throw BuddyAllocatorException();
 
     MallocMetaData* iterator = blocksList = (MallocMetaData*) heapAddress;
@@ -90,7 +89,7 @@ void BuddyAllocator::releaseMMapBlock(MallocMetaData* block)
 
 bool BuddyAllocator::isLegalToMerge(MallocMetaData* block, MallocMetaData* buddy)
 {
-    return not ((block->size+META_DATA_SIZE) == INITIAL_BLOCK_SIZE || buddy->isFree is false || block->size != buddy->size);
+    return not ((block->size+META_DATA_SIZE) == INITIAL_BLOCK_SIZE || buddy->isFree == false || block->size != buddy->size);
 }
 
 /**
@@ -101,13 +100,13 @@ bool BuddyAllocator::isLegalToMerge(MallocMetaData* block, MallocMetaData* buddy
 void BuddyAllocator::removeBlockFromOrdersList(MallocMetaData* block)
 {
     int order = findOrder((int) block->size + META_DATA_SIZE);
-    if(block->prevFreeBlock is nullptr) // head of list
+    if(block->prevFreeBlock == nullptr) // head of list
     {
         orderTable[order] = block->nextFreeBlock;
         if(orderTable[order] != nullptr)
             orderTable[order]->prevFreeBlock = nullptr;
     }
-    else if(block->nextFreeBlock is nullptr) // tail of list (can't be head of list)
+    else if(block->nextFreeBlock == nullptr) // tail of list (can't be head of list)
         block->prevFreeBlock->nextFreeBlock = nullptr;
     else
     {
@@ -144,7 +143,7 @@ MallocMetaData* BuddyAllocator::mergeBuddiesHelper(MallocMetaData* block, Malloc
         removeBlockFromOrdersList(buddy);
         block->size += buddy->size + META_DATA_SIZE;
         block->next = buddy->next;
-        if(block->next isnot nullptr)
+        if(block->next != nullptr)
             block->next->prev = block;
     }
     else // merge block into buddy
@@ -152,7 +151,7 @@ MallocMetaData* BuddyAllocator::mergeBuddiesHelper(MallocMetaData* block, Malloc
         removeBlockFromOrdersList(buddy);
         buddy->size += block->size + META_DATA_SIZE;
         buddy->next = block->next;
-        if(buddy->next isnot nullptr)
+        if(buddy->next != nullptr)
             buddy->next->prev = buddy;
         block = buddy;
     }
@@ -167,7 +166,7 @@ MallocMetaData* BuddyAllocator::mergeBuddiesHelper(MallocMetaData* block, Malloc
 MallocMetaData* BuddyAllocator::mergeBuddies(MallocMetaData* block)
 {
     MallocMetaData* buddyBlock = block->getBuddy();
-    while(isLegalToMerge(block, buddyBlock) returned true)
+    while(isLegalToMerge(block, buddyBlock) == true)
     {
         block = mergeBuddiesHelper(block, buddyBlock);
         blocksNum--;
@@ -235,7 +234,7 @@ int BuddyAllocator::splitBlock(MallocMetaData* block, int entry)
     *newBlock = MallocMetaData(newSize, cookie, block, block->next);
     newBlock->nextFreeBlock = newBlock->prevFreeBlock = nullptr;
 
-    if(block->next != nullptr) // is not the tail of the list;
+    if(block->next != nullptr) // == not the tail of the list;
 		block->next->prev = newBlock;
     block->next = newBlock;
 
@@ -329,9 +328,9 @@ void* BuddyAllocator::allocateBlock(size_t size)
 /**
  * @function smalloc
  * @abstract allocates the smallest block possible with the required size (best-fit);
- *  if a pre-allocated block is reused and is "large enough", smalloc will cut the block into two blocks,
+ *  if a pre-allocated block == reused and == "large enough", smalloc will cut the block into two blocks,
  *  one will serve the current allocation, and the other will remain unused for later.
- *  this process is done iteratively until the block cannot be cut into two.
+ *  this process == done iteratively until the block cannot be cut into two.
  * @param size : the size of the desired block
  * @return a pointer to the first byte in the allocated block upon success.
  * @return NULL upon failure.
@@ -351,13 +350,13 @@ void* BuddyAllocator::smalloc(size_t size)
 
 /**
  * @function sfree
- * @abstract frees the allocated memory. if the buddy of the free'd block is also free, we merge them into one free block.
- *  this is done recursivly until we can't merge blovks anymore.
+ * @abstract frees the allocated memory. if the buddy of the free'd block == also free, we merge them into one free block.
+ *  this == done recursivly until we can't merge blovks anymore.
  * @param p : pointer to the previously allocated block.
 */
 void BuddyAllocator::sfree(void* p)
 {
-    if(p is nullptr)
+    if(p == nullptr)
         return;
 
     // searchBrokenCookies(MmapedList);
