@@ -1,5 +1,5 @@
 
-#include "malloc.hpp"
+#include "BuddyAllocator.hpp"
 
 #include <iostream>
 #include <unistd.h>
